@@ -116,7 +116,9 @@ function toggleAdvancedOptions() {
 function handlePasswordModeChange() {
     if (passwordMode.value === 'pattern') {
         patternContainer.classList.remove('hidden');
-        passwordPattern.value = 'AAAA-BBBB-CCCC-DDDD';
+        if (!passwordPattern.value) {
+            passwordPattern.value = 'AAAA-BBBB-CCCC-DDDD';
+        }
     } else {
         patternContainer.classList.add('hidden');
     }
@@ -125,9 +127,6 @@ function handlePasswordModeChange() {
     const isRandom = passwordMode.value === 'random';
     excludeSimilar.disabled = !isRandom;
     excludeDuplicates.disabled = !isRandom;
-    
-    // 生成新密码
-    generatePassword();
 }
 
 // 生成密码
