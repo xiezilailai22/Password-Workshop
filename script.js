@@ -21,6 +21,7 @@ const passwordMode = document.getElementById('password-mode');
 const patternContainer = document.getElementById('pattern-container');
 const passwordPattern = document.getElementById('password-pattern');
 const patternLengthNote = document.getElementById('pattern-length-note');
+const memorableModeNote = document.getElementById('memorable-mode-note');
 const historyContainer = document.getElementById('history-container');
 const clearHistory = document.getElementById('clear-history');
 const themeToggle = document.getElementById('theme-toggle');
@@ -116,29 +117,66 @@ function toggleAdvancedOptions() {
 // 处理密码模式变化
 function handlePasswordModeChange() {
     const isPatternMode = passwordMode.value === 'pattern';
+    const isMemorableMode = passwordMode.value === 'memorable';
+    const isRandomMode = passwordMode.value === 'random';
+    
+    // 获取所有密码选项复选框
+    const optionCheckboxes = [
+        includeUppercase,
+        includeLowercase,
+        includeNumbers,
+        includeSymbols,
+        excludeSimilar,
+        excludeDuplicates
+    ];
     
     // 处理模式密码的特殊UI
     if (isPatternMode) {
         patternContainer.classList.remove('hidden');
-        patternLengthNote.classList.remove('hidden');
         if (!passwordPattern.value) {
             passwordPattern.value = 'AAAA-BBBB-CCCC-DDDD';
         }
         // 禁用密码长度滑块
         lengthSlider.disabled = true;
         lengthSlider.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        // 禁用所有密码选项
+        optionCheckboxes.forEach(checkbox => {
+            checkbox.disabled = true;
+            checkbox.parentElement.classList.add('opacity-50');
+        });
+        
+        patternLengthNote.classList.remove('hidden');
+        memorableModeNote.classList.add('hidden');
     } else {
         patternContainer.classList.add('hidden');
-        patternLengthNote.classList.add('hidden');
         // 启用密码长度滑块
         lengthSlider.disabled = false;
         lengthSlider.classList.remove('opacity-50', 'cursor-not-allowed');
+        patternLengthNote.classList.add('hidden');
+        
+        // 显示或隐藏可记忆密码模式提示
+        if (isMemorableMode) {
+            memorableModeNote.classList.remove('hidden');
+        } else {
+            memorableModeNote.classList.add('hidden');
+        }
+        
+        // 根据模式启用或禁用选项
+        optionCheckboxes.forEach(checkbox => {
+            // 在随机密码模式下，所有选项都可用
+            // 在可记忆密码模式下，排除易混淆字符和排除重复字符选项禁用
+            const shouldDisable = isMemorableMode && 
+                (checkbox === excludeSimilar || checkbox === excludeDuplicates);
+            
+            checkbox.disabled = shouldDisable;
+            if (shouldDisable) {
+                checkbox.parentElement.classList.add('opacity-50');
+            } else {
+                checkbox.parentElement.classList.remove('opacity-50');
+            }
+        });
     }
-    
-    // 更新选项可用性
-    const isRandom = passwordMode.value === 'random';
-    excludeSimilar.disabled = !isRandom;
-    excludeDuplicates.disabled = !isRandom;
     
     // 不再自动生成新密码，只更新UI状态
     // 评估当前密码强度
@@ -150,8 +188,10 @@ function handlePasswordModeChange() {
 // 生成密码
 function generatePassword() {
     let password = '';
+    const currentMode = passwordMode.value;
     
-    switch (passwordMode.value) {
+    // 根据当前模式生成密码
+    switch (currentMode) {
         case 'random':
             password = generateRandomPassword();
             break;
@@ -260,13 +300,22 @@ function generateMemorablePassword() {
     components.push(getRandomWord(memorableWords.adjectives));
     components.push(getRandomWord(memorableWords.nouns));
     
-    // 添加随机数字
-    const randomNum = Math.floor(Math.random() * 100);
-    components.push(randomNum.toString());
+    // 根据用户选择添加字符
+    let extraChars = '';
     
-    // 添加随机特殊字符
-    const randomSymbol = symbolChars[Math.floor(Math.random() * symbolChars.length)];
-    components.push(randomSymbol);
+    if (includeNumbers.checked) {
+        // 添加随机数字
+        const randomNum = Math.floor(Math.random() * 100);
+        components.push(randomNum.toString());
+        extraChars += numberChars;
+    }
+    
+    if (includeSymbols.checked) {
+        // 添加随机特殊字符
+        const randomSymbol = symbolChars[Math.floor(Math.random() * symbolChars.length)];
+        components.push(randomSymbol);
+        extraChars += symbolChars;
+    }
     
     // 打乱组件顺序
     components = shuffleArray(components);
@@ -274,13 +323,45 @@ function generateMemorablePassword() {
     // 组合密码
     password = components.join('');
     
+    // 确保包含所选字符类型
+    let allChars = '';
+    if (includeUppercase.checked) {
+        allChars += uppercaseChars;
+        // 确保包含至少一个大写字母
+        if (!/[A-Z]/.test(password)) {
+            const randomChar = uppercaseChars[Math.floor(Math.random() * uppercaseChars.length)];
+            password = password.substring(0, 0) + randomChar + password.substring(1);
+        }
+    }
+    
+    if (includeLowercase.checked) {
+        allChars += lowercaseChars;
+        // 确保包含至少一个小写字母
+        if (!/[a-z]/.test(password)) {
+            const randomChar = lowercaseChars[Math.floor(Math.random() * lowercaseChars.length)];
+            password = password.substring(0, 0) + randomChar + password.substring(1);
+        }
+    }
+    
+    if (includeNumbers.checked) {
+        allChars += numberChars;
+    }
+    
+    if (includeSymbols.checked) {
+        allChars += symbolChars;
+    }
+    
+    // 如果没有选择任何字符类型，默认使用小写字母
+    if (allChars.length === 0) {
+        allChars = lowercaseChars;
+    }
+    
     // 调整密码长度以匹配用户设置
     if (password.length > desiredLength) {
         // 如果密码太长，截断它
         password = password.substring(0, desiredLength);
     } else if (password.length < desiredLength) {
         // 如果密码太短，添加随机字符直到达到所需长度
-        const allChars = uppercaseChars + lowercaseChars + numberChars + symbolChars;
         while (password.length < desiredLength) {
             const randomChar = allChars[Math.floor(Math.random() * allChars.length)];
             password += randomChar;
