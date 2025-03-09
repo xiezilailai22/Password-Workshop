@@ -20,6 +20,7 @@ const advancedOptions = document.getElementById('advanced-options');
 const passwordMode = document.getElementById('password-mode');
 const patternContainer = document.getElementById('pattern-container');
 const passwordPattern = document.getElementById('password-pattern');
+const patternLengthNote = document.getElementById('pattern-length-note');
 const historyContainer = document.getElementById('history-container');
 const clearHistory = document.getElementById('clear-history');
 const themeToggle = document.getElementById('theme-toggle');
@@ -35,11 +36,11 @@ const numberChars = '0123456789';
 const symbolChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 const similarChars = 'iIlL1oO0';
 
-// 可记忆密码单词库（简化版）
+// 可记忆密码单词库（使用拼音替代中文）
 const memorableWords = {
-    adjectives: ['大', '小', '快', '慢', '高', '低', '红', '蓝', '绿', '黄', '强', '弱', '硬', '软', '冷', '热'],
-    nouns: ['山', '水', '树', '花', '鸟', '鱼', '车', '船', '飞机', '电脑', '手机', '书', '笔', '桌', '椅', '门'],
-    verbs: ['跑', '跳', '飞', '游', '唱', '跳', '读', '写', '吃', '喝', '看', '听', '说', '想', '做', '去']
+    adjectives: ['da', 'xiao', 'kuai', 'man', 'gao', 'di', 'hong', 'lan', 'lv', 'huang', 'qiang', 'ruo', 'ying', 'ruan', 'leng', 're'],
+    nouns: ['shan', 'shui', 'shu', 'hua', 'niao', 'yu', 'che', 'chuan', 'feiji', 'diannao', 'shouji', 'shu', 'bi', 'zhuo', 'yi', 'men'],
+    verbs: ['pao', 'tiao', 'fei', 'you', 'chang', 'tiao', 'du', 'xie', 'chi', 'he', 'kan', 'ting', 'shuo', 'xiang', 'zuo', 'qu']
 };
 
 // 历史记录
@@ -114,19 +115,36 @@ function toggleAdvancedOptions() {
 
 // 处理密码模式变化
 function handlePasswordModeChange() {
-    if (passwordMode.value === 'pattern') {
+    const isPatternMode = passwordMode.value === 'pattern';
+    
+    // 处理模式密码的特殊UI
+    if (isPatternMode) {
         patternContainer.classList.remove('hidden');
+        patternLengthNote.classList.remove('hidden');
         if (!passwordPattern.value) {
             passwordPattern.value = 'AAAA-BBBB-CCCC-DDDD';
         }
+        // 禁用密码长度滑块
+        lengthSlider.disabled = true;
+        lengthSlider.classList.add('opacity-50', 'cursor-not-allowed');
     } else {
         patternContainer.classList.add('hidden');
+        patternLengthNote.classList.add('hidden');
+        // 启用密码长度滑块
+        lengthSlider.disabled = false;
+        lengthSlider.classList.remove('opacity-50', 'cursor-not-allowed');
     }
     
     // 更新选项可用性
     const isRandom = passwordMode.value === 'random';
     excludeSimilar.disabled = !isRandom;
     excludeDuplicates.disabled = !isRandom;
+    
+    // 不再自动生成新密码，只更新UI状态
+    // 评估当前密码强度
+    if (passwordDisplay.value) {
+        evaluatePasswordStrength(passwordDisplay.value);
+    }
 }
 
 // 生成密码
@@ -224,23 +242,52 @@ function generateRandomPassword() {
 
 // 生成可记忆密码
 function generateMemorablePassword() {
+    // 获取用户设置的密码长度
+    const desiredLength = parseInt(lengthSlider.value);
+    
     const getRandomWord = (wordArray) => {
         return wordArray[Math.floor(Math.random() * wordArray.length)];
     };
     
-    const adjective1 = getRandomWord(memorableWords.adjectives);
-    const noun1 = getRandomWord(memorableWords.nouns);
-    const verb = getRandomWord(memorableWords.verbs);
-    const adjective2 = getRandomWord(memorableWords.adjectives);
-    const noun2 = getRandomWord(memorableWords.nouns);
+    // 创建基本的可记忆密码结构
+    let password = '';
+    let components = [];
+    
+    // 添加基本组件
+    components.push(getRandomWord(memorableWords.adjectives));
+    components.push(getRandomWord(memorableWords.nouns));
+    components.push(getRandomWord(memorableWords.verbs));
+    components.push(getRandomWord(memorableWords.adjectives));
+    components.push(getRandomWord(memorableWords.nouns));
     
     // 添加随机数字
     const randomNum = Math.floor(Math.random() * 100);
+    components.push(randomNum.toString());
     
     // 添加随机特殊字符
     const randomSymbol = symbolChars[Math.floor(Math.random() * symbolChars.length)];
+    components.push(randomSymbol);
     
-    return `${adjective1}${noun1}${randomSymbol}${verb}${adjective2}${noun2}${randomNum}`;
+    // 打乱组件顺序
+    components = shuffleArray(components);
+    
+    // 组合密码
+    password = components.join('');
+    
+    // 调整密码长度以匹配用户设置
+    if (password.length > desiredLength) {
+        // 如果密码太长，截断它
+        password = password.substring(0, desiredLength);
+    } else if (password.length < desiredLength) {
+        // 如果密码太短，添加随机字符直到达到所需长度
+        const allChars = uppercaseChars + lowercaseChars + numberChars + symbolChars;
+        while (password.length < desiredLength) {
+            const randomChar = allChars[Math.floor(Math.random() * allChars.length)];
+            password += randomChar;
+        }
+    }
+    
+    return password;
 }
 
 // 生成模式密码
@@ -268,6 +315,9 @@ function generatePatternPassword() {
                 result += char;
         }
     }
+    
+    // 更新长度显示，使其与生成的密码长度匹配
+    lengthValue.textContent = result.length;
     
     return result;
 }
@@ -402,7 +452,7 @@ function updateHistoryUI() {
         passwordSpan.textContent = password;
         
         const copyButton = document.createElement('button');
-        copyButton.className = 'text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300';
+        copyButton.className = 'text-primary-500 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300';
         copyButton.innerHTML = '<i class="fas fa-copy"></i>';
         copyButton.title = '复制密码';
         copyButton.addEventListener('click', () => {
