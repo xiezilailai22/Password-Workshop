@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密码生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">密码生成器</h1>
+            <p class="text-gray-600 dark:text-gray-400">生成安全、强大且易记的密码</p>
+        </header>
+
+        <main class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <!-- 密码显示区域 -->
+            <div class="mb-6">
+                <div class="relative">
+                    <input type="text" id="password-display" 
+                        class="w-full p-4 pr-20 text-xl font-mono bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" 
+                        readonly>
+                    <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-2">
+                        <button id="copy-btn" class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 p-2" title="复制密码">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button id="refresh-btn" class="text-green-500 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 p-2" title="生成新密码">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- 密码强度指示器 -->
+                <div class="mt-2">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium">密码强度</span>
+                        <span id="strength-text" class="text-sm font-medium">弱</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                        <div id="strength-meter" class="bg-red-500 h-2.5 rounded-full" style="width: 25%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 密码选项 -->
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label for="password-length" class="block mb-2 text-sm font-medium">
+                        密码长度: <span id="length-value">16</span> 个字符
+                    </label>
+                    <input type="range" id="password-length" min="8" max="64" value="16" 
+                        class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="include-uppercase" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" checked>
+                        <label for="include-uppercase" class="ml-2 text-sm font-medium">
+                            包含大写字母 (A-Z)
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="include-lowercase" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" checked>
+                        <label for="include-lowercase" class="ml-2 text-sm font-medium">
+                            包含小写字母 (a-z)
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="include-numbers" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" checked>
+                        <label for="include-numbers" class="ml-2 text-sm font-medium">
+                            包含数字 (0-9)
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="include-symbols" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" checked>
+                        <label for="include-symbols" class="ml-2 text-sm font-medium">
+                            包含特殊字符 (!@#$%^&*)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="exclude-similar" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" checked>
+                        <label for="exclude-similar" class="ml-2 text-sm font-medium">
+                            排除易混淆字符 (0O, 1l, etc.)
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="exclude-duplicates" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
+                        <label for="exclude-duplicates" class="ml-2 text-sm font-medium">
+                            排除重复字符
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 生成按钮 -->
+            <div class="flex justify-center">
+                <button id="generate-btn" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-key mr-2"></i> 生成密码
+                </button>
+            </div>
+
+            <!-- 高级选项切换 -->
+            <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <button id="advanced-toggle" class="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                    <i class="fas fa-cog mr-2"></i> 高级选项
+                    <i class="fas fa-chevron-down ml-2 transition-transform duration-200"></i>
+                </button>
+                
+                <!-- 高级选项面板 -->
+                <div id="advanced-options" class="hidden mt-4 space-y-4">
+                    <div>
+                        <label for="password-mode" class="block mb-2 text-sm font-medium">密码模式</label>
+                        <select id="password-mode" class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            <option value="random" selected>随机密码</option>
+                            <option value="memorable">可记忆密码</option>
+                            <option value="pattern">模式密码</option>
+                        </select>
+                    </div>
+                    
+                    <div id="pattern-container" class="hidden">
+                        <label for="password-pattern" class="block mb-2 text-sm font-medium">密码模式</label>
+                        <input type="text" id="password-pattern" placeholder="例如: AAAA-BBBB-CCCC-DDDD" 
+                            class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            A=大写字母, a=小写字母, 9=数字, #=特殊字符, 其他字符保持不变
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 历史记录 -->
+            <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-lg font-medium">历史记录</h3>
+                    <button id="clear-history" class="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
+                        清除历史
+                    </button>
+                </div>
+                <div id="history-container" class="space-y-2 max-h-40 overflow-y-auto">
+                    <!-- 历史记录项将通过JavaScript动态添加 -->
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center italic">暂无历史记录</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- 主题切换和关于信息 -->
+        <footer class="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
+            <div class="flex justify-center space-x-4 mb-4">
+                <button id="theme-toggle" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400">
+                    <i class="fas fa-moon mr-1 dark:hidden"></i>
+                    <i class="fas fa-sun mr-1 hidden dark:inline"></i>
+                    <span class="dark:hidden">深色模式</span>
+                    <span class="hidden dark:inline">浅色模式</span>
+                </button>
+                <button id="about-btn" class="flex items-center hover:text-blue-600 dark:hover:text-blue-400">
+                    <i class="fas fa-info-circle mr-1"></i> 关于
+                </button>
+            </div>
+            <p>© 2023 密码生成器 | 版本 1.0</p>
+        </footer>
+
+        <!-- 关于对话框 -->
+        <div id="about-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">关于密码生成器</h3>
+                    <button id="close-about" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-3">
+                    <p>密码生成器是一款安全、易用的工具，帮助您创建符合现代安全标准的强密码。</p>
+                    <p>所有密码生成过程均在本地完成，不会传输到任何服务器。</p>
+                    <h4 class="font-medium mt-4">安全提示</h4>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>使用至少12个字符的密码</li>
+                        <li>混合使用大小写字母、数字和特殊字符</li>
+                        <li>避免在多个网站使用相同的密码</li>
+                        <li>定期更换重要账户的密码</li>
+                    </ul>
+                </div>
+                <div class="mt-6 text-right">
+                    <button id="close-about-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
